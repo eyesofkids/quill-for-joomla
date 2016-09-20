@@ -24,7 +24,8 @@ class plgEditorquilleditor extends JPlugin
     public function onSave($editor)
     {
 
-        $js = "\t   var content = $.EpicNS.quilleditor.exportFile();\n
+
+        $js = "\t   var content = $.QuillNS.quillditor.root.innerHTML;\n
 
                       document.getElementById('{$editor}').value = content;\n";
         return $js;
@@ -75,43 +76,36 @@ class plgEditorquilleditor extends JPlugin
             $js = <<<JS
 function jInsertEditorText(text, editor_id) {
 
-var obj = {
-    mystring: text
+  var obj = {
+      mystring: text
+  }
+
+
+  var img_tag = jQuery(obj.mystring).filter('img')[0];
+  var img_src = jQuery(img_tag).attr('src');
+  var new_img_src = "{$path}" + img_src;
+
+  // console.log(text);
+  // console.log(new_img_src);
+
+//  $.QuillNS.quillditor.insertEmbed(10, 'image', new_img_src);
+var range = $.QuillNS.quillditor.getSelection();
+if (range) {
+  if (range.length == 0) {
+    console.log('User cursor is at index', range.index);
+  } else {
+    var text = $.QuillNS.quillditor.getText(range.index, range.length);
+    console.log('User has highlighted: ', text);
+  }
+} else {
+  console.log('User cursor is not in editor');
 }
 
 
-var img_tag = jQuery(obj.mystring).filter('img')[0];
-var img_src = jQuery(img_tag).attr('src');
+  $.QuillNS.quillditor.insertEmbed(range.index, 'image', new_img_src );
 
-
-var hr_tag = jQuery(obj.mystring).filter('hr')[0];
-
-var a_tag = jQuery(obj.mystring).filter('a')[0];
-var a_href = jQuery(a_tag).attr('href');
-
-
-if (typeof img_tag != 'undefined'){
- var new_img_src = "{$path}" + img_src;
- var newText = text.replace(img_src, new_img_src);
- }
-else
-{
- var newText = text;
-}
-
-if (typeof hr_tag == 'undefined'){
-  newText = toMarkdown(newText, { gfm: true });
-}
-
-newText = jQuery('<div/>').text(newText).html();
-
-var iframe = $.EpicNS.quilleditor.getElement('editorIframe');
-var idoc = iframe.contentDocument || iframe.contentWindow.document;
-
-if (!idoc.execCommand("InsertInputText", false, newText)) {
- idoc.execCommand("InsertHTML", false, newText)
-}
-
+  $.QuillNS.quillditor.insertText(range.index, text);
+  $.QuillNS.quillditor.formatText(range.index, text.length, text, true);
 }
 JS;
 
@@ -162,88 +156,65 @@ JS;
 
         $doc->addScript($path . 'quill.min.js');
 
-        $doc->addStyleSheet($path .$editor_theme.'.css');
+        $doc->addStyleSheet($path .'quill.'.$editor_theme.'.css');
 
         //heredoc string for javascript
-       $optionJs = <<<JS
-       var quill = new Quill('#{$id}', {
-                     theme: '{$editor_theme}'
-                   });
-        JS;
-        //heredoc string for javascript
-//         $optionJs = <<<JS
-// jQuery(document).ready(function(){
-// var opts = {
-//   container: 'quilleditor',
-//   textarea: '{$id}',
-//   basePath: '{$path}quilleditor',
-//   clientSideStorage: true,
-//   localStorageName: 'quilleditor',
-//   useNativeFullscreen: true,
-//   parser: marked,
-//   file: {
-//     name: 'quilleditor',
-//     defaultContent: '',
-//     autoSave: {$auto_save}
-//   },
-//   theme: {
-//     base: '{$path}themes/base/quilleditor.css',
-//     preview: '{$path}themes/preview/{$preview_theme}.css',
-//     editor: '{$path}themes/editor/{$editor_theme}.css'
-//   },
-//   button: {
-//     preview: true,
-//     fullscreen: true,
-//     bar: true
-//   },
-//   focusOnLoad: false,
-//   shortcut: {
-//     modifier: 18,
-//     fullscreen: 70,
-//     preview: 80
-//   },
-//   string: {
-//     togglePreview: 'Toggle Preview Mode',
-//     toggleEdit: 'Toggle Edit Mode',
-//     toggleFullscreen: 'Enter Fullscreen'
-//   },
-//   autogrow: true
-// }
-//
-// $.EpicNS = {};
-// $.EpicNS.quilleditor = new quilleditor(opts);
-//
-//
-// $.EpicNS.quilleditor.load(function(){
-//
-//    if(jQuery('#jform_title').val() == ""){
-//
-//     var r = confirm("It looks like you create a new article. Want to clean the LocalStorage now ?");
-//     if (r == true) {
-//         $.EpicNS.quilleditor.remove();
-//         $.EpicNS.quilleditor.open();
-//     }
-//
-//    }
-//
-//
-// });
-//
-// });
-// JS;
+        //sync innerhtml from textarea to quill container
+$optionJs = <<<JS
+jQuery(document).ready(function (){
+
+  jQuery('#quilleditor').html(jQuery('#{$id}').val());
+
+  var toolbarOptions = [
+  ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+  ['blockquote', 'code-block'],
+
+  [{ 'header': 1 }, { 'header': 2 }],               // custom button values
+  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+  [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+  [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+  [{ 'direction': 'rtl' }],                         // text direction
+
+  [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
+  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+
+  [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+  [{ 'font': [] }],
+  [{ 'align': [] }],
+
+  ['clean']                                         // remove formatting button
+];
+
+
+  $.QuillNS = {};
+  $.QuillNS.quillditor = new Quill('#quilleditor', {
+    modules: {
+      toolbar: toolbarOptions
+    },
+    theme: '{$editor_theme}'
+  });
+
+  $.QuillNS.quillditor.on('text-change', function() {
+    jQuery('#{$id}').val(jQuery('#quilleditor').html());
+  });
+
+});
+JS;
 
         $doc->addScriptDeclaration($optionJs);
-        //$script = "var editor = new quilleditor(opts);";
 
         // $doc->addScriptDeclaration($script);
-        //$buttons = $this->_displayButtons($id, $buttons, $asset, $author);
+        $buttons = $this->_displayButtons($id, $buttons, $asset, $author);
 
         $html = array();
 
+        //$html[] = "<textarea name=\"$name\" id=\"$id\" cols=\"$col\" rows=\"$row\" >$content</textarea>";
+         $html[] = '<div id="quilleditor"></div>';
 
         $html[] = '<textarea name="' . $name . '" id="' . $id . '" cols="' . $col . '" rows="' . $row . '" style="display:none">' . $content . '</textarea>';
 
-      //  $html[] = $buttons;
+
+        $html[] = $buttons;
 
 
         $output = "";
@@ -252,7 +223,6 @@ JS;
         return $output;
 
     }
-
 
     /**
      * @param $name
@@ -332,4 +302,4 @@ JS;
         return $return;
     }
 
-}
+  }
