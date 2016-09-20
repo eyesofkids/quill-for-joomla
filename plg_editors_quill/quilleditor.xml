@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<extension version="3.0" type="plugin" group="editors" method="upgrade">
+    <name>Editor - Quill</name>
+    <version>0.1.0</version>
+    <creationDate>9/20/2016</creationDate>
+    <author>Eddy Chang</author>
+    <authorEmail>eddy@joomla.com.tw</authorEmail>
+    <authorUrl>eddychang.me</authorUrl>
+    <copyright>Copyright (C) Eddy Chang</copyright>
+    <license>GNU General Public License version 2</license>
+    <description>Quill Editor for Joomla</description>
+
+    <files>
+        <filename plugin="quilleditor">quilleditor.php</filename>
+        <folder plugin="quilleditor">quill</folder>
+    </files>
+    <config>
+        <fields name="params">
+            <fieldset name="basic">
+                <field
+                        name="editor_theme"
+                        type="list"
+                        label="Editor Theme"
+                        description="Snow or Bubble theme"
+                        default="snow"
+                        >
+                    <option value="snow">Snow</option>
+                    <option value="bubble">bubble</option>
+                </field>
+            </fieldset>
+        </fields>
+    </config>
+</extension>
